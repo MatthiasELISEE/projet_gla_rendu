@@ -18,7 +18,6 @@ if (!empty($_GET)) {
 	}
 }
 
-print_r($_GET);
 $idProd = $_REQUEST['idProduit'];	
 $ado = new Info_Produit_ADO($idProd);
 
@@ -81,7 +80,6 @@ $data["quantiteDisponible"] = $ado->quantiteDisponible();
 				  <li class="list-group-item">Date de publication: <?php echo $data['datePublic']; ?> </li>
 				  <li class="list-group-item">Quantite: <?php echo $data['quantite']; ?> </li>
 				  <li class="list-group-item">Note: <?php echo $data['noteDocument']; ?> </li>
-				  <li class="list-group-item">Description: <?php echo $data['description']; ?> </li>
 				  <li class="list-group-item">Description: <?php echo $data['description']; ?> </li>
 				</ul>
 				</div>

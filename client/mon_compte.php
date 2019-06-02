@@ -1,8 +1,8 @@
 <!doctype html>
 <?php
 session_start();
-		// connexion base
-		$base = mysqli_connect ('localhost', 'main', 'main', 'db');
+// connexion base
+$base = mysqli_connect ('localhost', 'main', 'main', 'db');
 
 ?>
 <html lang="fr">

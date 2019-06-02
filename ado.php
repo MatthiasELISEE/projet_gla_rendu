@@ -403,7 +403,6 @@ class Info_Produit_ADO {
 		}
 		
 		if (isset($id)) {
-			echo "SELECT * FROM db.Produit WHERE db.Produit.idProduit=$id";
 			$result = $this->connection->query("SELECT * FROM db.Produit WHERE db.Produit.idProduit=$id");
 			if (!$result or $result->num_rows == 0) {
 				print_r($this->connection->error_list);
@@ -412,14 +411,12 @@ class Info_Produit_ADO {
 			
 			$this->produit = new Produit($result->fetch_assoc());
 			
-			echo "SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id";
 			$result = $this->connection->query("SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id");
 			if (!$result) {
 				print_r($this->connection->error_list);
 				die("Etes vous sur que ce produit existe");
 			}
 			
-			echo "SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id";
 			$result = $this->connection->query("SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id");
 			if (!$result) {
 				print_r($this->connection->error_list);
@@ -434,23 +431,43 @@ class Info_Produit_ADO {
 	function quantiteDisponible() {
 		$q = $this->produit->getQuantite();
 		$id = $this->produit->getIdProduit();
-		$idClient = $_SESSION["usager"]["idPersonne"];
-		echo "SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id AND Emprunt.idClient!=$idClient";
-		$result = $this->connection->query("SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id AND Emprunt.idClient!=$idClient");
-		if (!$result) {
-			print_r($this->connection->error_list);
-			die("Etes vous sur que ce produit existe");
+		if (isset($_SESSION["usager"])) {
+			$idClient = $_SESSION["usager"]["idPersonne"];
+			echo "SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id AND Emprunt.idClient!=$idClient";
+			$result = $this->connection->query("SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id AND Emprunt.idClient!=$idClient");
+			if (!$result) {
+				print_r($this->connection->error_list);
+				die("Etes vous sur que ce produit existe");
+			}
+			
+			$q -= $result->num_rows;
+			
+			echo "SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id AND Reservation.idClient!=$idClient";
+			$result = $this->connection->query("SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id AND Reservation.idClient!=$idClient");
+			if (!$result) {
+				print_r($this->connection->error_list);
+				die("Etes vous sur que ce produit existe");
+			}
+			$q -= $result->num_rows;
+		} else {
+			echo "SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id";
+			$result = $this->connection->query("SELECT * FROM db.Emprunt WHERE Emprunt.idProduit=$id");
+			if (!$result) {
+				print_r($this->connection->error_list);
+				die("Etes vous sur que ce produit existe");
+			}
+			
+			$q -= $result->num_rows;
+			
+			echo "SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id";
+			$result = $this->connection->query("SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id");
+			if (!$result) {
+				print_r($this->connection->error_list);
+				die("Etes vous sur que ce produit existe");
+			}
+			$q -= $result->num_rows;
+
 		}
-		
-		$q -= $result->num_rows;
-		
-		echo "SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id AND Reservation.idClient!=$idClient";
-		$result = $this->connection->query("SELECT * FROM db.Reservation WHERE Reservation.idProduit=$id AND Reservation.idClient!=$idClient");
-		if (!$result) {
-			print_r($this->connection->error_list);
-			die("Etes vous sur que ce produit existe");
-		}
-		$q -= $result->num_rows;
 
 		return $q;
 	}
@@ -492,6 +509,7 @@ class Info_Produit_ADO {
 		."', noteDocument='".$data["noteDocument"]
 		."', description='".$data["description"]
 		."' WHERE idProduit=$id");
+		
 		if (!$result) {
 			print_r($this->connection->error_list);
 			echo "Echec de la suppression.";
@@ -500,8 +518,10 @@ class Info_Produit_ADO {
 		// Création de l'action correspondante.
 		$nom = $this->produit->getNomProduit();
 		$p = $this->produit;
-		$description = "Suppression du produit $nom. ";
-		$sqlPourAnnuler = "INSERT INTO db.Produit (idProduit, nomProduit, auteur, etat, edition, datePublic, quantite, noteDocument, description) VALUES (".$p->getIdProduit().",'".$p->getNomProduit()."','".$p->getEtat()."','".$p->getDatePublic()."','".$p->getQuantite()."','".$p->getNoteProduit()."','".$p->getDescription()."')";
+		$description = "Modification du produit $nom. ";
+		$sqlPourAnnuler = "INSERT INTO db.Produit (idProduit, nomProduit, auteur, etat, edition, datePublic, quantite, noteDocument, description) VALUES (".$p->getIdProduit().",'".$p->getNomProduit()."','".$p->getAuteur()."','".$p->getEtat().."','".$p->getEdition()"','".$p->getDatePublic()."','".$p->getQuantite()."','".$p->getNoteProduit()."','".$p->getDescription()."')";
+		
+		$this->produit = new Produit($data);
 		
 		Actions_ADO::createAction($this->connection, $description, $sqlPourAnnuler);
     }
@@ -611,11 +631,11 @@ class Action_ADO {
 				print_r($this->connection->error_list);
 				echo "Echec de l'annulation.";
 			} else {
-				$result = $this->connection->query("DELETE FROM db.Action WHERE idAction=$id");
+				/*$result = $this->connection->query("DELETE FROM db.Action WHERE idAction=$id");
 				if (!$result) {
 					print_r($this->connection->error_list);
 					echo "Echec de l'annulation.";
-				}
+				}*/
 				unset($actions[$id]);
 			}
 		}
@@ -675,9 +695,6 @@ class Connexion_ADO {
 	    }
     }
 }
-
-$connexion = new Connexion_ADO();
-$connexion->identification("test","b");
 
 
 class Inscription_ADO {
@@ -759,6 +776,7 @@ class Mon_Compte_ADO {
     	// TODO
     }
 }
+
 class Liste_Produit_ADO {
     public $vue;
     public $produits;
@@ -772,13 +790,6 @@ class Liste_Produit_ADO {
 	
     function affiche_Accueil_ADO(){
     	// TODO	
-    }
-    function supprimerProduit($id){
-		$result = $this->connection->query("DELETE FROM PRODUIT WHERE idProduit='$id'");
-		if (!$result) {
-			print_r($this->connection->error_list);
-			echo "Erreur lors de la suppression du produit.";
-		}
     }
 }
 		
